@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Flappy Bird</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { display: flex; justify-content: center; align-items: center; height: 100vh; background: #70c5ce; font-family: Arial, sans-serif; }
+        #homeScreen, #gameCanvas { display: none; }
+        #homeScreen { display: flex; flex-direction: column; align-items: center; gap: 20px; }
+        button { padding: 10px 20px; font-size: 20px; cursor: pointer; border: none; background: #ff5722; color: white; border-radius: 5px; transition: background 0.2s; }
+        button:hover { background: #e64a19; }
+        canvas { border: 2px solid #000; background: #fff; max-width: 100%; height: auto; }
+        .fade-in { animation: fadeIn 1s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        #muteButton { position: absolute; top: 20px; right: 20px; background: #000; color: #fff; padding: 5px 10px; cursor: pointer; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <div id="homeScreen" class="fade-in">
+        <h1>Flappy Bird</h1>
+        <button onclick="playButtonClick(); startGame()">Play Game</button>
+        <button onclick="playButtonClick(); window.close()">Exit</button>
+        <p id="highScoreText">High Score: 0</p>
+    </div>
+    <canvas id="gameCanvas" width="480" height="640"></canvas>
+    <button id="muteButton" onclick="toggleMute()">Mute</button>
+
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const homeScreen = document.getElementById('homeScreen');
+        const highScoreText = document.getElementById('highScoreText');
+        let highScore = localStorage.getItem('highScore') || 0;
+        highScoreText.textContent = `High Score: ${highScore}`;
+        
+        const bgImg = new Image(); bgImg.src = 'images/bg.jpg';
+        const birdImg = new Image(); birdImg.src = 'images/birdpng.png';
+        const pipeImg = new Image(); pipeImg.src = 'images/bamboo2.png';
+
+        const bgMusic = new Audio('sounds/background.mp3');
+        bgMusic.loop = true;
+        const flapSound = new Audio('sounds/jump.mpeg');
+        const gameOverSound = new Audio('sounds/gameover.mpeg');
+        let isMuted = false;
+
+        let bird, pipes, frame, score, gameOver, gameStarted;
+
+        function toggleMute() {
+            isMuted = !isMuted;
+            bgMusic.muted = isMuted;
+            flapSound.muted = isMuted;
+            gameOverSound.muted = isMuted;
+            document.getElementById('muteButton').textContent = isMuted ? 'Unmute' : 'Mute';
+        }
+
+        function playButtonClick() {
+            if (!isMuted) {
+                flapSound.currentTime = 0; // Restart flap sound on each click
+                flapSound.play();
+            }
+        }
+
+        function drawBird() { ctx.drawImage(birdImg, bird.x, bird.y, bird.width, bird.height); }
+
+        function drawPipes() {
+            pipes.forEach(pipe => {
+                ctx.drawImage(pipeImg, pipe.x, 0, pipe.width, pipe.top);
+                ctx.drawImage(pipeImg, pipe.x, pipe.top + pipe.gap, pipe.width, canvas.height - pipe.top - pipe.gap);
+            });
+        }
+
+        function updateGame() {
+            if (!gameStarted) return;
+            if (gameOver) {
+                if (score > highScore) {
+                    highScore = score;
+                    localStorage.setItem('highScore', highScore);
+                }
+                bgMusic.pause();
+                if (!isMuted) gameOverSound.play();
+                setTimeout(() => {
+                    Swal.fire({
+                        title: 'Game Over!',
+                        text: `Your score: ${score}\nHigh Score: ${highScore}`,
+                        icon: 'error',
+                        showCancelButton: true,
+                        confirmButtonText: 'Retry',
+                        cancelButtonText: 'Home'
+                    }).then((result) => {
+                        if (result.isConfirmed) { startGame(); }
+                        else { goToHome(); }
+                    });
+                }, 100);
+                return;
+            }
+
+            ctx.drawImage(bgImg, 0, 0, canvas.width, canvas.height);
+            bird.velocity += bird.gravity; bird.y += bird.velocity;
+            if (bird.y > canvas.height || bird.y < 0) gameOver = true;
+
+            if (frame % 100 === 0) pipes.push({ x: canvas.width, top: Math.random() * (canvas.height / 2), width: 50, gap: 150 });
+            pipes.forEach(pipe => { pipe.x -= 3; if (pipe.x + pipe.width < 0) pipes.shift(); });
+            pipes.forEach(pipe => {
+                if (bird.x < pipe.x + pipe.width && bird.x + bird.width > pipe.x && (bird.y < pipe.top || bird.y + bird.height > pipe.top + pipe.gap)) gameOver = true;
+                if (pipe.x + pipe.width === bird.x) score++;
+            });
+
+            drawPipes();
+            drawBird();
+            ctx.fillStyle = "black"; ctx.font = "20px Arial"; ctx.fillText(`Score: ${score}`, 10, 20);
+            frame++; requestAnimationFrame(updateGame);
+        }
+
+        function startGame() {
+            homeScreen.style.display = 'none'; canvas.style.display = 'block';
+            bird = { x: 50, y: 150, width: 40, height: 40, gravity: 0.6, lift: -10, velocity: 0 };
+            pipes = []; frame = 0; score = 0; gameOver = false; gameStarted = true;
+            gameOverSound.pause(); // Stop game over sound
+            gameOverSound.currentTime = 0;
+            if (!isMuted) {
+                bgMusic.currentTime = 0; // Restart background music
+                bgMusic.play();
+            }
+            updateGame();
+        }
+
+        function goToHome() {
+            homeScreen.style.display = 'flex'; canvas.style.display = 'none';
+            highScoreText.textContent = `High Score: ${highScore}`;
+        }
+
+        window.addEventListener('keydown', e => {
+            if (e.code === 'Space') {
+                if (!gameStarted) startGame();
+                bird.velocity = bird.lift;
+                playButtonClick();
+            }
+        });
+
+        canvas.addEventListener('click', () => {
+            if (!gameStarted) startGame();
+            bird.velocity = bird.lift;
+            playButtonClick();
+        });
+    </script>
+</body>
+</html>
