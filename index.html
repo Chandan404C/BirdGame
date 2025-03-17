@@ -59,10 +59,7 @@
         }
 
         function playButtonClick() {
-            if (!isMuted) {
-                flapSound.currentTime = 0; // Restart flap sound on each click
-                flapSound.play();
-            }
+            if (!isMuted) flapSound.play();
         }
 
         function drawBird() { ctx.drawImage(birdImg, bird.x, bird.y, bird.width, bird.height); }
@@ -103,8 +100,8 @@
             bird.velocity += bird.gravity; bird.y += bird.velocity;
             if (bird.y > canvas.height || bird.y < 0) gameOver = true;
 
-            if (frame % 100 === 0) pipes.push({ x: canvas.width, top: Math.random() * (canvas.height / 2), width: 50, gap: 150 });
-            pipes.forEach(pipe => { pipe.x -= 3; if (pipe.x + pipe.width < 0) pipes.shift(); });
+            if (frame % 150 === 0) pipes.push({ x: canvas.width, top: Math.random() * (canvas.height / 2), width: 50, gap: 180 });
+            pipes.forEach(pipe => { pipe.x -= 2; if (pipe.x + pipe.width < 0) pipes.shift(); });
             pipes.forEach(pipe => {
                 if (bird.x < pipe.x + pipe.width && bird.x + bird.width > pipe.x && (bird.y < pipe.top || bird.y + bird.height > pipe.top + pipe.gap)) gameOver = true;
                 if (pipe.x + pipe.width === bird.x) score++;
@@ -118,14 +115,9 @@
 
         function startGame() {
             homeScreen.style.display = 'none'; canvas.style.display = 'block';
-            bird = { x: 50, y: 150, width: 40, height: 40, gravity: 0.6, lift: -10, velocity: 0 };
+            bird = { x: 50, y: 150, width: 40, height: 40, gravity: 0.4, lift: -8, velocity: 0 };
             pipes = []; frame = 0; score = 0; gameOver = false; gameStarted = true;
-            gameOverSound.pause(); // Stop game over sound
-            gameOverSound.currentTime = 0;
-            if (!isMuted) {
-                bgMusic.currentTime = 0; // Restart background music
-                bgMusic.play();
-            }
+            if (!isMuted) bgMusic.play();
             updateGame();
         }
 
