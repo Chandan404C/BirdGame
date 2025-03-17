@@ -112,14 +112,31 @@
             ctx.fillStyle = "black"; ctx.font = "20px Arial"; ctx.fillText(`Score: ${score}`, 10, 20);
             frame++; requestAnimationFrame(updateGame);
         }
-
         function startGame() {
-            homeScreen.style.display = 'none'; canvas.style.display = 'block';
-            bird = { x: 50, y: 150, width: 40, height: 40, gravity: 0.4, lift: -8, velocity: 0 };
-            pipes = []; frame = 0; score = 0; gameOver = false; gameStarted = true;
-            if (!isMuted) bgMusic.play();
-            updateGame();
-        }
+    // Stop all sounds and reset
+    bgMusic.pause();
+    bgMusic.currentTime = 0;
+    gameOverSound.pause();
+    gameOverSound.currentTime = 0;
+
+    // Reset game state
+    homeScreen.style.display = 'none';
+    canvas.style.display = 'block';
+    bird = { x: 50, y: 150, width: 40, height: 40, gravity: 0.4, lift: -8, velocity: 0 };
+    pipes = [];
+    frame = 0;
+    score = 0;
+    gameOver = false;
+    gameStarted = true;
+
+    // Play background music if not muted
+    if (!isMuted) bgMusic.play();
+
+    updateGame();
+}
+
+
+
 
         function goToHome() {
             homeScreen.style.display = 'flex'; canvas.style.display = 'none';
